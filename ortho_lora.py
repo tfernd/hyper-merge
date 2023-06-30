@@ -3,8 +3,6 @@ from typing import Literal, Optional
 
 import logging
 
-from functools import cache
-
 from tqdm.auto import tqdm
 
 import json
@@ -18,7 +16,6 @@ from torch import Tensor
 from safetensors.torch import load_file, save_file
 
 
-@cache
 def get_civitai_model_url(modelId: int | str) -> tuple[str, str]:
     url = f"https://civitai.com/api/v1/models/{modelId}"
 
