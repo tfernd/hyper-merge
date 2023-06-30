@@ -26,9 +26,7 @@ def get_civitai_model_url(modelId: int | str) -> tuple[str, str]:
 
         return obj["name"], obj["downloadUrl"]  # type: ignore
 
-    response.raise_for_status()
-    get_civitai_model_url.cache_clear()
-    raise ValueError  # ! why?
+    raise ValueError 
 
 
 def download_ckpt(url: str, path: str | Path, /) -> None:
