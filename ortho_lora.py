@@ -20,7 +20,7 @@ def load_ckpt(
     path: str | Path,
     /,
     *,
-    cache_dir: Optional[Path] = None,
+    cache_dir: Optional[str | Path] = None,
 ) -> dict[str, Tensor]:
     # Download url
     if isinstance(path, str) and path.startswith("http"):
@@ -29,7 +29,7 @@ def load_ckpt(
         hash_object = hashlib.md5(path.encode())
         hash_name = hash_object.hexdigest()
 
-        cache_dir = cache_dir or Path.home() / "sd-models-cache"
+        cache_dir = Path(cache_dir) if cache_dir is not None else Path.home() / "sd-models-cache"
         assert cache_dir.is_dir()
         path = cache_dir / f"{hash_name}.safetensors"
 
@@ -73,7 +73,7 @@ def extract_lora(
     clamp_quantile: Optional[float] = 0.99,
     device: str = "cpu",
     save_path: Optional[str | Path] = None,
-    cache_dir: Optional[Path] = None,
+    cache_dir: Optional[str | Path] = None,
 ) -> dict[str, Tensor]:
     """
     Extract LoRA (Low-Rank Adaptation) parameters from provided base and tuned models.
