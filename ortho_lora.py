@@ -1,4 +1,5 @@
-from typing import Optional
+from __future__ import annotations
+from typing import Literal, Optional
 
 import logging
 
@@ -16,43 +17,26 @@ from torch import Tensor
 from safetensors.torch import load_file, save_file
 
 
-def load_ckpt(
-    path: str | Path,
-    /,
-    *,
-    cache_dir: Optional[str | Path] = None,
-) -> dict[str, Tensor]:
-    # Download url
-    if isinstance(path, str) and path.startswith("http"):
-        url = path
+def download_ckpt(url: str, path: str | Path, /) -> None:
+    path = Path(path)
+    assert path.suffix == ".safetensors"
 
-        hash_object = hashlib.md5(path.encode())
-        hash_name = hash_object.hexdigest()
+    if path.exists():
+        return
 
-        cache_dir = Path(cache_dir) if cache_dir is not None else Path.home() / "sd-models-cache"
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        
-        assert cache_dir.is_dir()
-        path = cache_dir / f"{hash_name}.safetensors"
-
-        if path.exists():
-            # If partially downloaded of failed.
-            try:
-                return load_ckpt(path)
-            except:
-                pass
-
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "wb") as f:
         response = requests.get(url, stream=True)
+        total_size = int(response.headers.get("content-length", 0))
 
-        with open(path, "wb") as f:
-            total_size = int(response.headers.get("content-length", 0))
-            with tqdm(total=total_size, unit="iB", unit_scale=True, desc=f"Downloading {url}") as pbar:
-                for chunk in response.iter_content(chunk_size=8_192):
-                    pbar.update(len(chunk))
-                    if chunk:
-                        f.write(chunk)
-        return load_ckpt(path)
+        with tqdm(total=total_size, unit="iB", unit_scale=True, desc=f"Downloading {url}") as pbar:
+            for chunk in response.iter_content(chunk_size=8_192):
+                pbar.update(len(chunk))
+                if chunk:
+                    f.write(chunk)
 
+
+def load_ckpt(path: str | Path, /) -> dict[str, Tensor]:
     path = Path(path)
     if path.suffix == ".safetensors":
         return load_file(path)
@@ -63,11 +47,13 @@ def load_ckpt(
     return checkpoint["state_dict"] if "state_dict" in checkpoint else checkpoint
 
 
-def clamp_rank(rank: int | float, /) -> int | float:
+def clamp_rank(rank: int | float, N: int, /, min_dim: int, max_dim: int) -> int:
     if isinstance(rank, float):
-        return max(0, min(1, rank))
+        rank = math.ceil(rank * N)
 
-    return max(1, rank)
+    rank = min(max(rank, min_dim), max_dim)
+
+    return min(max(1, rank), N)
 
 
 def extract_lora(
@@ -75,28 +61,27 @@ def extract_lora(
     tuned_path: str | Path,
     /,
     *,
-    dim: int | float,
-    conv_dim: Optional[int | float] = None,
-    max_dim: Optional[int] = None,
+    dim: int | float = 0.04,
+    min_dim: int = 4,
+    max_dim: int = 1_024,
     clamp_quantile: Optional[float] = 0.99,
-    device: str = "cpu",
     save_path: Optional[str | Path] = None,
-    cache_dir: Optional[str | Path] = None,
+    device: Literal["cuda", "cpu", "auto"] = "auto",
 ) -> dict[str, Tensor]:
     """
     Extract LoRA (Low-Rank Adaptation) parameters from provided base and tuned models.
     """
 
-    save_path = Path(save_path) if save_path else None
-
-    dim = clamp_rank(dim)
-    conv_dim = clamp_rank(conv_dim or dim)
-
     with open("sd_1.5-lora_mapping.json", "r") as f:
         mapping = json.load(f)
 
-    base = load_ckpt(base_path, cache_dir=cache_dir)
-    tuned = load_ckpt(tuned_path, cache_dir=cache_dir)
+    if device == "auto":
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    save_path = Path(save_path) if save_path else None
+
+    base = load_ckpt(base_path)
+    tuned = load_ckpt(tuned_path)
 
     out: dict[str, Tensor] = {}
     for key, lora_key in tqdm(mapping.items(), "Converting to LORA"):
@@ -106,21 +91,14 @@ def extract_lora(
         diff = tuned_tensor - base_tensor
 
         shape = tuple(diff.shape)
-        ndim = diff.ndim
-        is_conv = ndim == 4
+        is_conv = diff.ndim == 4
         out_dim, in_dim, *kernel_size = shape
 
         diff = diff.flatten(1)
         N = diff.size(1)
 
-        if is_conv and tuple(kernel_size) != (1, 1):
-            rank = min(conv_dim, N) if isinstance(conv_dim, int) else math.ceil(conv_dim * N)
-            rank = min(rank, in_dim, out_dim)
-        else:
-            rank = min(dim, N) if isinstance(dim, int) else math.ceil(dim * N)
-
-        if max_dim is not None:
-            rank = min(rank, max_dim)
+        rank = clamp_rank(dim, N, min_dim, max_dim)
+        rank = min(rank, out_dim, N)
 
         U, S, Vh = torch.svd_lowrank(diff, q=rank)
         U = U @ torch.diag(S)
@@ -145,7 +123,7 @@ def extract_lora(
 
     if save_path is not None:
         if save_path.is_dir():
-            save_path = save_path / tuned_path.name
+            save_path = save_path / Path(tuned_path).name
 
         if save_path.exists():
             save_path.unlink()
