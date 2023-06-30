@@ -79,8 +79,6 @@ def extract_lora(
     Extract LoRA (Low-Rank Adaptation) parameters from provided base and tuned models.
     """
 
-    base_path = Path(base_path)
-    tuned_path = Path(tuned_path)
     save_path = Path(save_path) if save_path else None
 
     dim = clamp_rank(dim)
