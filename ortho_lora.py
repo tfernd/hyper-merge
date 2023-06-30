@@ -30,12 +30,13 @@ def load_ckpt(
         hash_name = hash_object.hexdigest()
 
         cache_dir = Path(cache_dir) if cache_dir is not None else Path.home() / "sd-models-cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        
         assert cache_dir.is_dir()
         path = cache_dir / f"{hash_name}.safetensors"
 
         response = requests.get(url, stream=True)
 
-        cache_dir.mkdir(parents=True, exist_ok=True)
         with open(path, "wb") as f:
             total_size = int(response.headers.get("content-length", 0))
             with tqdm(total=total_size, unit="iB", unit_scale=True, desc=f"Downloading {url}") as pbar:
