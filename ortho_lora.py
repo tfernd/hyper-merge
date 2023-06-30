@@ -35,6 +35,13 @@ def load_ckpt(
         assert cache_dir.is_dir()
         path = cache_dir / f"{hash_name}.safetensors"
 
+        if path.exists():
+            # If partially downloaded of failed.
+            try:
+                return load_ckpt(path)
+            except:
+                pass
+
         response = requests.get(url, stream=True)
 
         with open(path, "wb") as f:
