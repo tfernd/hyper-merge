@@ -3,18 +3,35 @@ from typing import Literal, Optional
 
 import logging
 
+from functools import cache
+
 from tqdm.auto import tqdm
 
 import json
 from pathlib import Path
 import requests
-import hashlib
 
 import math
 import torch
 from torch import Tensor
 
 from safetensors.torch import load_file, save_file
+
+
+@cache
+def get_civitai_model_url(modelId: int | str) -> tuple[str, str]:
+    url = f"https://civitai.com/api/v1/models/{modelId}"
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        obj = response.json()
+        obj = obj["modelVersions"][0]["files"][0]
+
+        return obj["name"], obj["downloadUrl"]  # type: ignore
+
+    response.raise_for_status()
+    get_civitai_model_url.cache_clear()
+    raise ValueError  # ! why?
 
 
 def download_ckpt(url: str, path: str | Path, /) -> None:
