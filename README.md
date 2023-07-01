@@ -1,26 +1,26 @@
 # Ortho-LoRA Toolbox
 
-The Ortho-LoRA Toolbox is a collection of utility functions designed to enhance the working efficiency of LoRA (Low-Rank Adaptation) models for Stable-Diffusion. LoRA is a technique that utilizes low-rank approximation to adapt pretrained models to new tasks effectively.
+The Ortho-LoRA Toolbox is a powerful collection of utility functions designed to enhance the efficiency of LoRA (Low-Rank Adaptation) models for Stable-Diffusion. LoRA is a technique that leverages low-rank approximation to effectively adapt pretrained models to new tasks.
 
 ## Key Features
 
-- LoRA Extraction: The toolbox provides methods to extract LoRA from a base model and a tuned model without instantiating the model. This allows for a fast extraction process, typically completing in less than 4 seconds.
+- **LoRA Extraction**: Extract LoRA parameters from a base model and a tuned model without model instantiation, enabling fast extraction within seconds.
 
-- LoRA Merge: It also offers functionality to merge LoRA back into a model, enabling the integration of adapted knowledge without the need for extensive model instantiation.
+- **LoRA Merge**: Merge LoRA parameters back into a model without extensive model instantiation, seamlessly integrating adapted knowledge.
 
-- Orthogonalization: The Ortho-LoRA Toolbox introduces a novel approach called orthogonalization of LoRAs. It addresses the challenge of aligning multiple LoRAs in similar directions. By minimizing multipliers and reducing the mutual influence between aligned LoRAs, orthogonalization optimizes the weights to preserve principal directions in high-dimensional space.
+- **Orthogonalization**: Introducing the novel approach of orthogonalization of LoRAs, the Ortho-LoRA Toolbox addresses the challenge of aligning multiple LoRAs in similar directions. It optimizes the weights to preserve principal directions in high-dimensional space by reducing the mutual influence between aligned LoRAs.
 
 ## Orthogonalization Algorithm
 
 The main algorithm for orthogonalization involves the following steps:
 
-1. Determine the principal direction that minimizes the error between the concatenated LoRAs, denoted as $dW_{k,i}$, and their corresponding weights, represented by $v_i \lambda_k$. Here, $i$ iterates over the flattened weights of the LoRA for a specific layer, and $\lambda$ represents the scaling factor for a given LoRA.
+1. **Determine Principal Direction**: Minimize the error between concatenated LoRAs ($dW_{k,i}$) and their corresponding weights ($v_i \lambda_k$). Here, $i$ iterates over the flattened weights of a specific layer, and $\lambda$ represents the scaling factor for a LoRA.
 
-2. Subtract the principal direction from the LoRA weights.
+2. **Subtract Principal Direction**: Subtract the principal direction from the LoRA weights.
 
-3. Identify a new direction (secondary) that is relatively orthogonal to the principal direction.
+3. **Find Secondary Direction**: Identify a new direction (secondary) that is relatively orthogonal to the principal direction.
 
-By performing orthogonalization using this algorithm, the Ortho-LoRA Toolbox ensures that the multipliers used in the LoRAs have less mutual influence, enhancing the effectiveness of the adaptation process. This process can be applied to 2 or more LoRAs.
+Orthogonalization through this algorithm reduces the mutual influence between LoRAs, enhancing the effectiveness of the adaptation process. This process can be applied to two or more LoRAs.
 
 ## Advantages over Other Implementations
 
@@ -42,7 +42,7 @@ TODO !
 
 ## Usage
 
-The LoRA Toolbox provides several functions for extracting LoRA parameters, merging LoRA parameters into a base model, and performing orthogonalization of LoRA parameters. Here's an overview of the main functions:
+The Ortho-LoRA Toolbox provides several functions for extracting LoRA parameters, merging LoRA parameters into a base model, and performing orthogonalization of LoRA parameters. Here's an overview of the main functions:
 
 - `extract_lora`: Extract LoRA parameters from a base model and a tuned model.
 - `merge_lora`: Merge LoRA parameters into a base model.
