@@ -209,7 +209,7 @@ def extract_lora(
         out[lora_key + ".alpha"] = torch.tensor(rank).half()
 
     if save_path is not None:
-        if not lora.is_file():
+        if not save_path.is_file():
             save_path = save_path / (Path(base_path).stem + "_to_" + Path(tuned_path).name)
 
         if save_path.exists():
