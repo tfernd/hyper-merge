@@ -193,8 +193,8 @@ def extract_lora(
             U = U.clamp(-value, value)
             Vh = Vh.clamp(-value, value)
 
-        U = U.half().cpu().contiguous()
-        Vh = Vh.T.half().cpu().contiguous()
+        U = U.half().contiguous().cpu()
+        Vh = Vh.T.half().contiguous().cpu()
 
         if is_conv:
             U = U.unflatten(1, (rank, 1, 1)).contiguous()
