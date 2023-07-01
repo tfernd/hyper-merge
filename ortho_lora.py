@@ -56,13 +56,9 @@ def download_ckpt(url: str, path: str | Path, /) -> None:
         url (str): The URL of the checkpoint file.
         path (str | Path): The path to save the downloaded file.
 
-    Raises:
-        AssertionError: If the file extension is not '.safetensors'.
     """
 
     path = Path(path)
-    assert path.suffix == ".safetensors"
-
     if path.exists():
         return
 
