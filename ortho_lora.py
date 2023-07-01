@@ -41,9 +41,12 @@ def get_civitai_model_url(modelId: int | str) -> tuple[str, str]:
     response = requests.get(url)
     if response.status_code == 200:
         obj = response.json()
-        obj = obj["modelVersions"][0]["files"][0]
 
-        return obj["name"], obj["downloadUrl"]  # type: ignore
+        files = obj['modelVersions'][0]["files"]
+        safe_files = list(filter(lambda o: o['metadata']['format'] == 'SafeTensor', files))
+        file = safe_files[0] if len(safe_files) >= 1 else files[0]
+
+        return file["name"], file["downloadUrl"]  # type: ignore
 
     raise ValueError  # TODO better message
 
