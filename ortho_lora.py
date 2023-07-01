@@ -51,7 +51,7 @@ def get_civitai_model_url(modelId: int | str) -> tuple[str, str]:
     raise ValueError  # TODO better message
 
 
-def download_ckpt(url: str, path: str | Path, /) -> None:
+def download_ckpt(url: str, path: str | Path, /) -> Path:
     """
     Download a checkpoint file from a given URL and save it to the specified path.
 
@@ -63,7 +63,7 @@ def download_ckpt(url: str, path: str | Path, /) -> None:
 
     path = Path(path)
     if path.exists():
-        return
+        return path
 
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as f:
@@ -75,6 +75,7 @@ def download_ckpt(url: str, path: str | Path, /) -> None:
                 pbar.update(len(chunk))
                 if chunk:
                     f.write(chunk)
+    return path
 
 
 def load_ckpt(path: str | Path, /) -> dict[str, Tensor]:
