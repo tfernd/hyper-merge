@@ -238,7 +238,8 @@ def merge_lora(
     assert len(lora_base_keys - set(SD15MAP.values())) == 0
 
     for key in list(base.keys()):
-        base[key] = base[key].half().contiguous()
+        if base[key].dtype == torch.float32:
+            base[key] = base[key].half().contiguous()
 
     for lora_key in tqdm(lora_base_keys, "Mergin to LORA"):
         key = SD15MAP_INV[lora_key]
