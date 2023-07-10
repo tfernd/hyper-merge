@@ -1,7 +1,8 @@
 /.vscode
+
 *.pyc
+/__pycache__
 
 /LoRA
-/models
 
-debug.ipynb
+*.ipynb
