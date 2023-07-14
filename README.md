@@ -38,9 +38,10 @@ The role of LoRAs becomes crucial here. Given that each model consumes a substan
 
 Finally, the scale factor $\lambda$ and the differential $dW$ can be computed interactively by:
 
-$$dW'_{n, \theta_n} = \frac{\sum_m^M \lambda_m dW_{n, \theta_n}^m}{\sum_m^M \lambda_m^2}$$
-
-$$\lambda_m = \frac{\sum_n^N\sum_{\theta_n}^{\Theta_n} dW_{n, \theta_n}^m  dW'_{n, \theta_n}}{\sum_n^N\sum_{\theta_n}^{\Theta_n}  dW'^{2}_{n, \theta_n}}$$
+$$
+dW'_{n, \theta_n} = \frac{\sum_m^M \lambda_m dW_{n, \theta_n}^m}{\sum_m^M \lambda_m^2} \\
+\lambda_m = \frac{\sum_n^N\sum_{\theta_n}^{\Theta_n} dW_{n, \theta_n}^m  dW'_{n, \theta_n}}{\sum_n^N\sum_{\theta_n}^{\Theta_n}  dW'^{2}_{n, \theta_n}}
+$$
 
 In essence, this mathematical framework allows Hyper-LoRA to efficiently and effectively merge multiple models, optimizing weight distribution and reducing the computational resources required.
 
