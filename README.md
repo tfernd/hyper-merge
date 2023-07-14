@@ -1,5 +1,15 @@
 # Ortho-LoRA Toolbox
 
+Ortho-LoRA introduces new LoRA functionalities and old ones.
+Such as ultra-fast extraction of LoRA from pre-trained Stable-Diffusion (SD) models (under 3 seconds). Mergin a LoRA to a model.
+And, hyper-lora.
+
+SD users end-up with tens of models that do slighly different things. For example, photorealistic models, digital art models etc. Which model to choose as a base?
+
+SD-afficionadoes start to merge models, creating their personal concoctions of what the best model should be. By lots of trial and error they manually fine-tune the weights of each model to give the best overall merge. But that is not the best we can do.
+
+We could naively get 20 models and get the mean of everything. But what good will that come? Hyper-LoRA solves this problem by automatically finding the best possible merge (in a sense).
+
 The Ortho-LoRA Toolbox is a powerful collection of utility functions designed to enhance the efficiency of LoRA (Low-Rank Adaptation) models for Stable-Diffusion. LoRA is a technique that leverages low-rank approximation to effectively adapt pretrained models to new tasks.
 
 ## Key Features
