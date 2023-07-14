@@ -1,119 +1,72 @@
-# Ortho-LoRA Toolbox
+# Hyper-LoRA
 
-Ortho-LoRA introduces new LoRA functionalities and old ones.
-Such as ultra-fast extraction of LoRA from pre-trained Stable-Diffusion (SD) models (under 3 seconds). Mergin a LoRA to a model.
-And, hyper-lora.
+Hyper-LoRA changes the landscape of LoRA by introducing advanced functionalities, including the ultra-fast extraction of LoRA from pre-trained Stable-Diffusion (SD) models (under 3 seconds), seamless merging of a LoRA into a model, and the unique feature of Hyper-LoRA.
 
-SD users end-up with tens of models that do slighly different things. For example, photorealistic models, digital art models etc. Which model to choose as a base?
+Users of SD often struggle with selecting an optimal base model from a plethora of models performing slightly different tasks. Furthermore, enthusiasts often attempt to blend models manually through trial and error, which is time-consuming and less efficient. Hyper-LoRA addresses this challenge by automating the process and optimizing model merging.
 
-SD-afficionadoes start to merge models, creating their personal concoctions of what the best model should be. By lots of trial and error they manually fine-tune the weights of each model to give the best overall merge. But that is not the best we can do.
+## Mathematical Framework
 
-We could naively get 20 models and get the mean of everything. But what good will that come? Hyper-LoRA solves this problem by automatically finding the best possible merge (in a sense).
+Hyper-LoRA employs an advanced mathematical framework to optimize model merging and weight distribution. The process involves minimizing a loss function over multiple models, providing a better means of consolidating various models into one optimal solution.
 
-The Ortho-LoRA Toolbox is a powerful collection of utility functions designed to enhance the efficiency of LoRA (Low-Rank Adaptation) models for Stable-Diffusion. LoRA is a technique that leverages low-rank approximation to effectively adapt pretrained models to new tasks.
+Let's break this down:
 
-## Key Features
+Consider $M$ to be the total number of models that need to be merged, and $N$ represents the total number of weights an SD model contains. Furthermore, let $\Theta_n$ be the number of weights associated with a certain layer $n$.
 
-- **LoRA Extraction**: Extract LoRA parameters from a base model and a tuned model without model instantiation, enabling fast extraction within seconds.
+We define $dW$ as the difference between a fine-tuned model (such as one produced by Dreambooth) and a base model. However, this can be extended to an arbitrary set of models.
 
-- **LoRA Merge**: Merge LoRA parameters back into a model without extensive model instantiation, seamlessly integrating adapted knowledge.
+The loss function that we seek to minimize is as follows:
 
-- **Orthogonalization**: Introducing the novel approach of orthogonalization of LoRAs, the Ortho-LoRA Toolbox addresses the challenge of aligning multiple LoRAs in similar directions. It optimizes the weights to preserve principal directions in high-dimensional space by reducing the mutual influence between aligned LoRAs.
+$$
+\sum_m^M\sum_n^N\sum_{\theta_n}^{\Theta_n} \left(
+ dW_{n, \theta_n}^m - dW'_{n, \theta_n}
+\right)^2,
+$$
 
-## Orthogonalization Algorithm
+In this equation, $dW'$ represents a newly found differential weight that minimizes the distance to all other models. It can be proven that this differential weight should be the mean of all weights, thus consolidating multiple models into a single one by averaging them corresponds to minimizing this loss.
 
-The main algorithm for orthogonalization involves the following steps:
+To refine this process further, a smarter way to define a loss function would be:
 
-1. **Determine Principal Direction**: Minimize the error between concatenated LoRAs ($dW_{k,i}$) and their corresponding weights ($v_i \lambda_k$). Here, $i$ iterates over the flattened weights of a specific layer, and $\lambda$ represents the scaling factor for a LoRA.
+$$
+\sum_m^M\sum_n^N\sum_{\theta_n}^{\Theta_n} \left(
+ dW_{n, \theta_n}^m - \lambda_m dW'_{n, \theta_n}
+\right)^2,
+$$
 
-2. **Subtract Principal Direction**: Subtract the principal direction from the LoRA weights.
+Here, $\lambda_m$ is a scaling factor applied to the differential weight for each model, functioning similarly to multipliers in LoRAs. This introduces an adaptive measure in the merging process, allowing some models to have higher multipliers, others lower, and even potentially negative ones.
 
-3. **Find Secondary Direction**: Identify a new direction (secondary) that is relatively orthogonal to the principal direction.
+The role of LoRAs becomes crucial here. Given that each model consumes a substantial amount of memory (2 GB each), merging multiple models would require significant computational resources. LoRAs enable us to extract the essential aspects of each model first, compute the differential weights per layer, and then move computations between the GPU and CPU as necessary.
 
-Orthogonalization through this algorithm reduces the mutual influence between LoRAs, enhancing the effectiveness of the adaptation process. This process can be applied to two or more LoRAs.
+Finally, the scale factor $\lambda$ and the differential $dW$ can be computed interactively by:
 
-## Advantages over Other Implementations
+$$
+dW'_{n, \theta_n} = \frac{\sum_m^M \lambda_m dW_{n, \theta_n}^m}{\sum_m^M \lambda_m^2} \\
+\lambda_m = \frac{\sum_n^N\sum_{\theta_n}^{\Theta_n} dW_{n, \theta_n}^m  dW'_{n, \theta_n}}{\sum_n^N\sum_{\theta_n}^{\Theta_n}  dW'^{2}_{n, \theta_n}}
+$$
 
-- No Model Instantiation: Unlike other implementations, such as [https://github.com/bmaltais/kohya_ss](https://github.com/bmaltais/kohya_ss), the Ortho-LoRA Toolbox avoids the need for model instantiation. It operates directly with the state-dict, resulting in faster extraction, saving valuable time and computational resources.
+In essence, this mathematical framework allows Hyper-LoRA to efficiently and effectively merge multiple models, optimizing weight distribution and reducing the computational resources required.
 
-## Table of Contents
+## Features
 
-- [Installation](#installation)
-- [Usage](#usage)
-- [Examples](#examples)
-- [Contributing](#contributing)
-- [License](#license)
+- **LoRA Extraction**: Quickly extract LoRA parameters from base and tuned models without model instantiation using torch.svd_lowrank for rapid SVD.
+- **LoRA Merge**: Seamlessly reintegrate LoRA parameters into a model without extensive model instantiation.
+- **Hyper-LoRA**: Advanced feature to optimize model merging. (Description to be added)
+- **Hyper-LoRA Orthogonalization**: Determine primary and secondary directions for LoRA. (Work in Progress)
 
-## Installation
+## Advantages
 
-To use the LoRA Toolbox, you need to have Python 3.10 or higher installed. You can install the toolbox using pip:
+Hyper-LoRA offers a significant advantage over other implementations like [https://github.com/bmaltais/kohya_ss](https://github.com/bmaltais/kohya_ss) by eliminating the need for model instantiation. This leads to faster extraction, saving both time and computational resources.
 
-TODO !
+## Future Work
 
-## Usage
-
-The Ortho-LoRA Toolbox provides several functions for extracting LoRA parameters, merging LoRA parameters into a base model, and performing orthogonalization of LoRA parameters. Here's an overview of the main functions:
-
-- `extract_lora`: Extract LoRA parameters from a base model and a tuned model.
-- `merge_lora`: Merge LoRA parameters into a base model.
-- `ortho_lora`: Perform orthogonalization of multiple LoRAs.
-
-## Examples
-
-### Extract LoRA Parameters
-
-```python
-from ortho_lora import extract_lora
-
-base_model_path = "base_model.safetensors"
-tuned_model_path = "tuned_model.safetensors"
-
-lora_params = extract_lora(
-    base_model_path, tuned_model_path,
-    dim=0.08,
-    min_dim=8, max_dim=96,
-    save_path='./LoRA')
-
-```
-
-This example demonstrates how to extract LoRA parameters from a base model and a tuned model. The `extract_lora` function takes the paths to the base model and tuned model files as input. Additional parameters such as `dim`, `min_dim`, and `max_dim` control the dimensionality of the extracted LoRA parameters. The extracted parameters are saved in the specified `save_path`.
-
-### Merge LoRA Parameters
-
-```python
-from ortho_lora import merge_lora
-
-base_model_path = "base_model.safetensors"
-lora_params_path = "lora_params.safetensors"
-
-merged_model = merge_lora(
-    base_model_path, lora_params_path,
-    multiplier=1, save_path='./models')
-
-```
-
-In this example, we demonstrate how to merge LoRA parameters into a base model. The `merge_lora` function takes the base model path and the path to the LoRA parameters file as input. The `multiplier` parameter controls the scaling of the LoRA parameters during the merge process. The merged model is saved in the specified `save_path`.
-
-### Perform Orthogonalization of LoRA Parameters
-
-```python
-from ortho_lora import ortho_lora
-
-loras_paths = ["lora1.safetensors", "lora2.safetensors", "lora3.safetensors"]
-
-lora1, lora2 = ortho_lora(loras_paths, save_path="./LoRA")
-```
-
-This example demonstrates how to perform orthogonalization on multiple LoRA parameters. The `ortho_lora` function takes a list of paths to the LoRA parameter files as input. After orthogonalization, the resulting LoRA parameters are saved in the specified `save_path`. In this example, the resulting orthogonalized parameters are assigned to `lora1` and `lora2`.
-
-Feel free to modify these examples based on your specific use cases, and refer to the documentation for more detailed information on the available parameters and their usage.
-
-By improving the examples section, users will have a clearer understanding of how to use the Ortho-LoRA Toolbox in different scenarios.
+- [ ] Integrate with AUTOMATIC1111
+- [ ] Develop a standalone GUI using Gradio
+- [ ] Introduce secondary direction to Hyper-LoRA
+- [ ] Provide Google Colab Support for Civitai Models: To streamline the process further, we plan to add a Google Colab notebook feature. This will allow users to extract LoRA from Civitai models without the need for local downloads, thus saving space and enhancing ease of use.
 
 ## Contributing
 
-Contributions to the ortho-LoRA are welcome! If you find a bug, have a feature request, or want to contribute code, please open an issue or submit a pull request.
+Contributions to Hyper-LoRA are always welcome! If you discover a bug, have a feature request, or wish to contribute code, please open an issue or submit a pull request.
 
 ## License
 
-The ortho-LoRA is licensed under the [MIT License](LICENSE).
+Hyper-LoRA is licensed under the [MIT License](LICENSE).
