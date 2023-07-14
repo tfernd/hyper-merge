@@ -4,5 +4,9 @@
 /__pycache__
 
 /LoRA
+/model
 
+*.nb
 *.ipynb
+format.bat
+ortho_lora.py
