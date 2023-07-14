@@ -170,7 +170,7 @@ def main_hyper_lora(
     save_path: str | Path,
     device: Device = "auto",
     steps: int = 1,
-) -> None:
+) -> Tensor:
     device, dtype = auto(device)
 
     loras = [load_ckpt(path) for path in tqdm(lora_paths, desc="Loading LoRAs")]
@@ -233,3 +233,5 @@ def main_hyper_lora(
         save_path = save_path / "hyper-lora.safetensors"
 
     _save(hyper_lora, save_path)
+
+    return scales.cpu()
