@@ -86,7 +86,7 @@ def extract_lora(
 
     save_path = Path(save_path)
     if save_path.suffix != ".safetensors":
-        save_path = save_path / (Path(tuned_path).name + "_from_" + Path(base_path).stem)
+        save_path = save_path / (Path(tuned_path).name + "_from_" + Path(base_path).name + ".safetensors")
 
     _save(out, save_path)
 
