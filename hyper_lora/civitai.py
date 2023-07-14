@@ -46,22 +46,27 @@ def download_ckpt(url: str, path: str | Path, /) -> Path:
     if path.exists():
         return path
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "wb") as f:
-        response = requests.get(url, stream=True)
-        total_size = int(response.headers.get("content-length", 0))
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as f:
+            response = requests.get(url, stream=True)
+            total_size = int(response.headers.get("content-length", 0))
 
-        with tqdm(total=total_size, unit="iB", unit_scale=True, desc=f"Downloading {url}") as pbar:
-            for chunk in response.iter_content(chunk_size=8_192):
-                pbar.update(len(chunk))
-                if chunk:
-                    f.write(chunk)
+            with tqdm(total=total_size, unit="iB", unit_scale=True, desc=f"Downloading {url}") as pbar:
+                for chunk in response.iter_content(chunk_size=8_192):
+                    pbar.update(len(chunk))
+                    if chunk:
+                        f.write(chunk)
 
-            if pbar.n < total_size:
-                path.unlink()
+                if pbar.n < total_size:
+                    path.unlink()
 
-                raise ValueError("Download incomplete. File removed.")
+                    raise ValueError("Download incomplete. File removed.")
+    except Exception as e:
+        if path.exists():
+            path.unlink()
 
+        raise e
     return path
 
 
