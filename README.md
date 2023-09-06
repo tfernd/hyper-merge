@@ -2,17 +2,19 @@
 
 ### TLDR
 
-Introducing **Hyper-Merge**: an innovative algorithm that redefines how we merge multiple Stable-Diffusion models. Move beyond the limitations of basic linear combinations — Hyper-Merge utilizes advanced mathematics to generate a brand-new set of model weights. With just a single or dual multiplier, you can transition smoothly between different models in a hyper-dimensional space. Say goodbye to manual guesswork; Hyper-Merge delivers a more precise, efficient, and powerful way to build multi-faceted, rock-stable neural models. 🛠️
+Introducing **Hyper-Merge**: a new algorithm designed to merge multiple Stable-Diffusion models more effectively than basic linear combinations. By applying advanced mathematical techniques, Hyper-Merge creates a new set of model weights. It allows for smooth transitions between different models using one or two multipliers. This offers a more precise and efficient approach to building stable neural models. The resulting hyper-model can also be converted into a **LoRA** file.
 
 ---
 
 ### Introduction
 
-Merging Stable-Diffusion models in the world of text-to-image neural networks is no small feat — it's a paradoxical journey that promises immense power yet risks creating unpredictable "chimera models." 😵 The stumbling block? Incompatible internal weights across diverse models, which turns the merging process into a high-stakes gamble.
+Combining Stable-Diffusion models in the field of text-to-image neural networks has always been challenging due to the issue of incompatible internal weights. This makes the merging process uncertain and complex.
 
-Enter **Hyper-Merge**. This repository unveils a novel mathematically solution to these intricate challenges. Unlike traditional methods that usually depend on simplistic linear combinations, Hyper-Merge goes several steps further. It crafts an entirely new set of model weights by optimizing a specialized loss function. 📈 And here's the kicker: this optimization is so efficient that it sidesteps the need for iterative gradient descent. 🔄
+**Hyper-Merge** provides a mathematical solution to address these challenges. Unlike traditional methods relying on simple linear combinations, Hyper-Merge uses a specialized loss function to generate a new set of optimized model weights. The optimization process is efficient, eliminating the need for iterative gradient descent.
 
-We proudly offer two versions of this game-changing approach: a 1D framework for those who prefer simplicity, and a 2D framework for those who crave an extra layer of complexity and control. Both are geared towards generating "hyper-models" that are not just strong, but also incredibly versatile and stable. 🛡️
+We offer two versions of Hyper-Merge: a 1D framework for straightforward applications and a 2D framework for those needing more control and complexity. Both are designed to produce hyper-models that are stable and versatile.
+
+As for the application of the differential weights produced by Hyper-Merge, they can be converted into a **LoRA** file. Typically, generating a LoRA file requires a fine-tuned model and a base model, with the weight differences then processed through SVD decomposition to save space. Since Hyper-Merge creates a differential model, these weights can be directly converted into a LoRA file!
 
 So why settle for anything less? Dive into the world of Hyper-Merge and experience the future of neural network model merging. 🌠
 
@@ -184,3 +186,13 @@ $$
 $$ -->
 
 ![](assets/eq/params2.png)
+
+## What is LoRA?
+
+LoRA: Low-Rank Adaptation
+Low-Rank Adaptation of Large Language Models (LoRA) is a training method that accelerates the training of large models while consuming less memory. It adds pairs of rank-decomposition weight matrices (called update matrices) to existing weights, and only trains those newly added weights. This has a couple of advantages:
+
+Previous pretrained weights are kept frozen so the model is not as prone to catastrophic forgetting.
+Rank-decomposition matrices have significantly fewer parameters than the original model, which means that trained LoRA weights are easily portable.
+LoRA matrices are generally added to the attention layers of the original model. 🧨 Diffusers provides the load_attn_procs() method to load the LoRA weights into a model’s attention layers. You can control the extent to which the model is adapted toward new training images via a scale parameter.
+The greater memory-efficiency allows you to run fine-tuning on consumer GPUs like the Tesla T4, RTX 3080 or even the RTX 2080 Ti! GPUs like the T4 are free and readily accessible in Kaggle or Google Colab notebooks.

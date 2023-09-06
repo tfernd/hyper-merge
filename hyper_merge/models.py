@@ -49,10 +49,10 @@ def make_model_average(
     keys = get_model_keys(models)
 
     avg_model: dict[str, Tensor] = {}
-    for key in tqdm(keys, desc="Creating the average model"):
+    for key in tqdm(keys, desc="Creating average model"):
         Ws = stacked_layers_weights(models, key, device, dtype)
 
-        avg_model[key] = Ws.mean(-1).cpu()
+        avg_model[key] = Ws.mean(-1).cpu()  # send to CPU
         del Ws
 
     return avg_model
@@ -60,7 +60,6 @@ def make_model_average(
 
 def update_diff_weights(
     models: list[dict[str, Tensor]],
-    avg_model: dict[str, Tensor], # TODO needed? can be derived from Ws.mean(-1)
     diff_model: dict[str, Tensor],
     λ: Tensor,
     /,
@@ -72,7 +71,7 @@ def update_diff_weights(
     λ2 = λ.square().mean()
     for key in tqdm(keys, desc="Updating weights", leave=False):
         Ws = stacked_layers_weights(models, key, device, dtype)
-        Wavg = avg_model[key][..., None]
+        Wavg = Ws.mean(-1, keepdim=True)
 
         diff_model[key] = λ.mul(Ws - Wavg).mean(-1) / λ2
 
@@ -83,7 +82,6 @@ def update_diff_weights(
 
 def update_λ(
     models: list[dict[str, Tensor]],
-    avg_model: dict[str, Tensor],# TODO needed? can be derived from Ws.mean(-1)
     diff_model: dict[str, Tensor],
     /,
     device: torch.device = DEVICE,
@@ -100,7 +98,7 @@ def update_λ(
 
     for key in tqdm(keys, desc="Updating scales", leave=False):
         Ws = stacked_layers_weights(models, key, device, dtype)
-        Wavg = avg_model[key][..., None]
+        Wavg = Ws.mean(-1, keepdim=True)
         dW = diff_model[key][..., None]
 
         num += dW.mul(Ws - Wavg).float().flatten(0, -2).mean(0)
@@ -118,9 +116,8 @@ def update_λ(
 
 def compute_loss(
     models: list[dict[str, Tensor]],
-    avg_model: dict[str, Tensor],# TODO needed? can be derived from Ws.mean(-1)
     diff_model: dict[str, Tensor],
-    λ: Tensor | float, # float = special case
+    λ: Tensor | float,  # float = special case for evaluation
     /,
     device: torch.device = DEVICE,
     dtype: torch.dtype = DTYPE,
@@ -130,7 +127,7 @@ def compute_loss(
     loss = torch.zeros(1, device=device, dtype=torch.float32)
     for key in tqdm(keys, desc="Calculating loss", leave=False):
         Ws = stacked_layers_weights(models, key, device, dtype)
-        Wavg = avg_model[key][..., None]
+        Wavg = Ws.mean(-1, keepdim=True)
         dW = diff_model[key][..., None]
 
         loss += (Ws - (Wavg + λ * dW)).square().float().mean()
@@ -141,7 +138,6 @@ def compute_loss(
 
 def make_diff_model(
     models: list[dict[str, Tensor]],
-    avg_model: dict[str, Tensor],
     /,
     device: torch.device = DEVICE,
     dtype: torch.dtype = DTYPE,
@@ -154,22 +150,22 @@ def make_diff_model(
     λ = torch.ones(M, device=device, dtype=dtype)
 
     # null diff
-    diff_model: dict[str, Tensor] = {key: torch.zeros(1, device=device, dtype=dtype) for key in keys} 
+    diff_model: dict[str, Tensor] = {key: torch.zeros(1, device=device, dtype=dtype) for key in keys}
 
     best_loss = 2
-    initial_loss = compute_loss(models, avg_model, diff_model, 0, device, dtype)
+    initial_loss = compute_loss(models, diff_model, 0, device, dtype)
     with trange(iterations) as pbar:
         for i in pbar:
-            diff_model = update_diff_weights(models, avg_model, diff_model, λ, device, dtype)
-            λ = update_λ(models, avg_model, diff_model, device, dtype, normalize=i < iterations - 1)
+            diff_model = update_diff_weights(models, diff_model, λ, device, dtype)
+            λ = update_λ(models, diff_model, device, dtype, normalize=i < iterations - 1)
 
-            loss = compute_loss(models, avg_model, diff_model, λ, device, dtype)
+            loss = compute_loss(models, diff_model, λ, device, dtype)
             loss /= initial_loss
-            pbar.set_postfix(loss=f'{loss*100:.3f}%')
+            pbar.set_postfix(loss=f"{loss*100:.3f}%")
 
-            # TODO Early break
-            # if abs(loss - best_loss)/best_loss < 0.5/100:
-            #     break
+            # Early break if < 0.1% decrease in loss
+            if abs(loss - best_loss) / best_loss < 0.1 / 100:
+                break
             best_loss = loss
 
     return diff_model, λ.tolist()
@@ -190,7 +186,7 @@ def make_hyper_model(
         Wavg = avg_model[key].to(device=device, dtype=dtype)
         dW = diff_model[key]
 
-        hyper_model[key] = Wavg.add(multiplier * dW).cpu()
+        hyper_model[key] = Wavg.add(multiplier * dW).cpu()  # send to CPU
 
         del Wavg, dW
 

@@ -27,8 +27,13 @@ def load_ckpt(
     return {key: weight.to(dtype=dtype, device=device) for (key, weight) in ckpt.items()}
 
 
-# TODO add metadata?
-def save_ckpt(model: dict[str, Tensor], path: Path, /) -> None:
+def save_ckpt(
+    model: dict[str, Tensor],
+    path: Path,
+    /,
+    *,
+    metadata: Optional[dict[str, str]] = None,
+) -> None:
     if path.exists():
         logging.warning(f"Deleting {path}!")
         path.unlink()
@@ -36,4 +41,4 @@ def save_ckpt(model: dict[str, Tensor], path: Path, /) -> None:
     assert path.suffix == ".safetensors"
 
     path.parent.mkdir(exist_ok=True, parents=True)
-    save_file(model, path)
+    save_file(model, path, metadata=metadata)
