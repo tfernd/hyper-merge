@@ -101,19 +101,23 @@ Let's dive deeper into the mathematical intricacies behind the Hyper-Merge algor
 
 The first approach is to minimize the following loss function:
 
-$$
+<!-- $$
 \sum_{m=1}^M \sum_{l=1}^L \sum_{\theta_l=1}^{\Theta_l} \left( W_{m,l,\theta_l} - \lambda_m W'_{l,\theta_l} \right)^2
-$$
+$$ -->
+
+![](assets/eq/loss1.png)
 
 To minimize this loss, we can use the following update equations:
 
-$$
+<!-- $$
 \lambda_m \to \frac{\sum_{\theta_l=1}^{\Theta_l} \sum_{l=1}^L W_{m,l,\theta_l} W'_{l,\theta_l}}{\sum_{\theta_l=1}^{\Theta_l} \sum_{l=1}^L {W'}_{l,\theta_l}^2}
 $$
 
 $$
 W'_{l,\theta_l} \to \frac{\sum_{m=1}^M \lambda_m W_{m,l,\theta_l}}{\sum_{m=1}^M \lambda_m^2}
-$$
+$$ -->
+
+![](assets/eq/params1.png)
 
 Note: This method does not guarantee a mathematical minimum but empirically results in a good approximation. The scales and weights are updated sequentially for a few iterations until local/global minima is achieved.
 
@@ -121,19 +125,23 @@ Note: This method does not guarantee a mathematical minimum but empirically resu
 
 A more robust approach introduces the concept of differential weights, ${\delta W}_{l,\theta_l}$, and a base or average weight, $\tilde{W}_{l,\theta_l}$ taken from the base model or the average model. The loss function is then:
 
-$$
+<!-- $$
 \sum_{m=1}^M \sum_{l=1}^L \sum_{\theta_l=1}^{\Theta_l} \left( W_{m,l,\theta_l} - (\tilde{W}_{l,\theta_l} + \lambda_m {\delta W}_{l,\theta_l}) \right)^2
-$$
+$$ -->
+
+![](assets/eq/loss2.png)
 
 The update equations for this approach are:
 
-$$
+<!-- $$
 \lambda_m \to \frac{\sum_{\theta_l=1}^{\Theta_l} \sum_{l=1}^L {\delta W}_{l,\theta_l} \left( W_{m,l,\theta_l} - \tilde{W}_{l,\theta_l} \right)}{\sum_{\theta_l=1}^{\Theta_l} \sum_{l=1}^L {\delta W}_{l,\theta_l}^2}
 $$
 
 $$
 {\delta W}_{l,\theta_l} \to \frac{\sum_{m=1}^M \lambda_m \left( W_{m,l,\theta_l} - \tilde{W}_{l,\theta_l} \right)}{\sum_{m=1}^M \lambda_m^2}
-$$
+$$ -->
+
+![](assets/eq/params1b.png)
 
 ### Advantages of Approach 1b
 
@@ -149,13 +157,15 @@ Until now, we've considered weight scaling along a 1-dimensional line, akin to L
 
 The expanded loss function for this plane-based approach is:
 
-$$
+<!-- $$
 \sum_{m=1}^M \sum_{l=1}^L \sum_{\theta_l=1}^{\Theta_l} \left( W_{m,l,\theta_l} - \left( \tilde{W}_{l,\theta_l} + \lambda_m {\delta W}_{l,\theta_l} + \kappa_m {\delta Q}_{l,\theta_l}  \right) \right)^2
-$$
+$$ -->
+
+![](assets/eq/loss3.png)
 
 Where $\delta W$ and $\delta Q$ are the two differential weights and $\lambda$ and $\kappa$ are the two multipliers.
 
-$$
+<!-- $$
 \lambda _m\to \frac{\sum _{\theta _l=1}^{\Theta _l} \sum _{l=1}^L {\delta W}_{l,\theta _l} \left(W_{m,l,\theta _l}-\tilde{W}_{l,\theta _l}-\kappa _m {\delta Q}_{l,\theta _l}\right)}{\sum _{\theta
    _l=1}^{\Theta _l} \sum _{l=1}^L {\delta W}_{l,\theta _l}^2}
 $$
@@ -171,4 +181,6 @@ $$
 
 $$
 {\delta Q}_{l,\theta _l}\to \frac{\sum _{m=1}^M \kappa _m \left(W_{m,l,\theta _l}-\lambda _m {\delta W}_{l,\theta _l}-\tilde{W}_{l,\theta _l}\right)}{\sum _{m=1}^M \kappa _m^2}
-$$
+$$ -->
+
+![](assets/eq/params2.png)
