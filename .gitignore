@@ -1,12 +1,14 @@
+.gitignore
+
 /.vscode
+/.old
 
-*.pyc
-/__pycache__
+**/*.pyc
+**/__pycache__
 
-/LoRA
-/model
+/models
 
-*.nb
-*.ipynb
 format.bat
-ortho_lora.py
+Math.nb
+
+*debug.ipynb
