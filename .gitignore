@@ -1,4 +1,10 @@
 .gitignore
 
+format.bat
+Math.nb
+
+**/*.pyc
+**/__pycache__
+
 # temporary
 .old

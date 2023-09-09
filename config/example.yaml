@@ -1,0 +1,17 @@
+models:
+  # Specify the paths to your SD 1.5 models in SAFETENSORS format
+  - C:\path-to-your-SD-1.5-model.safetensors
+  - C:\path-to-your-SD-1.5-model.safetensors
+  - C:\path-to-your-SD-1.5-model.safetensors
+  - C:\path-to-your-SD-1.5-model.safetensors
+
+device: cuda # Choose 'cuda' for GPU acceleration (not recommended for CPU)
+dtype: float16 # Use 'float16' for better performance (or 'bfloat' for RTX 3xxx/4xxx series); 'float32' is slower
+
+iterations: 6 # Number of optimization iterations; should be greater than 2; early stops if it converges
+
+ranks: # Specify the ranks for the LoRA model
+  - 128
+  - 64
+  - 32
+  - 16
