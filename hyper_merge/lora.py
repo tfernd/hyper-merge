@@ -45,7 +45,7 @@ def reconstruct_weights(uv: SVDOutput, /) -> Tensor:
     """
     Reconstruct the original tensor weights from a low-rank SVD decomposition.
     """
-    
+
     (U, V), shape, rank = uv
 
     return (U @ V).view(*shape)

@@ -12,6 +12,7 @@ from .constants import LORA_KEYS, CPU
 from .lora import svd, reconstruct_weights
 from .types import SVDCheckpoint
 
+
 def create_hyper_checkpoint(
     checkpoints: list[Checkpoint],
     average_checkpoint: Checkpoint,
@@ -112,20 +113,17 @@ def remove_direction(
     λ: Tensor,
     /,
     dtype: Optional[torch.dtype] = None,
-    device: Optional[torch.device] = None,# ? not used?
+    device: Optional[torch.device] = None,  # ? not used?
 ) -> list[Checkpoint]:
     free_cuda()
 
     checkpoints = transfer_checkpoints_(checkpoints, dtype, CPU)
 
-    out: list[Checkpoint] = []
     for checkpoint, scale in tqdm(list(zip(checkpoints, λ)), desc="Removing directions"):
         free_cuda()
 
-        checkpoint = {key: (weights - reconstruct_weights(diff_uv[key]).mul(scale).cpu()) for (key, weights) in checkpoint.items()}
-
-        out.append(checkpoint)
-        del checkpoint
+        for key, weights in checkpoint.items():
+            weights.data -= reconstruct_weights(diff_uv[key]).mul(scale).cpu()
     free_cuda()
 
-    return out
+    return checkpoints

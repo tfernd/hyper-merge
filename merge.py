@@ -67,9 +67,7 @@ if __name__ == "__main__":
         # Compute better average, differential weights, and scales
         logging.info("Computing hyper-checkpoint...")
         trimmed_diff_uv, λ = create_hyper_checkpoint(
-            trimmed_checkpoints, trimmed_average_checkpoint, 
-            dtype, device, 
-            rank=rank, iterations=config.iterations
+            trimmed_checkpoints, trimmed_average_checkpoint, dtype, device, rank=rank, iterations=config.iterations
         )
         λs.append(λ)
 
@@ -87,11 +85,9 @@ if __name__ == "__main__":
     # Create and display multipliers
     out = []
     for ckpt_name, scale in zip(config.checkpoint_names, λ.T):
-        loras = " ".join(
-            [f"<lora:{config.name}_{step}-{rank}:{s.item():.4f}>" for step, (s, rank) in enumerate(zip(scale, config.ranks))]
-        )
+        loras = " ".join([f"<lora:{config.name}_{step}-{rank}:{s.item():.4f}>" for step, (s, rank) in enumerate(zip(scale, config.ranks))])
         out.append(f"{ckpt_name}: {loras}")
-    out = "".join(out)
+    out = "\n".join(out)
     logging.info(out)
 
     with open(f"models/{config.name}_multipliers.txt", "w") as f:
