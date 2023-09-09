@@ -1,14 +1,4 @@
 .gitignore
 
-/.vscode
-/.old
-
-**/*.pyc
-**/__pycache__
-
-/models
-
-format.bat
-Math.nb
-
-*debug.ipynb
+# temporary
+.old

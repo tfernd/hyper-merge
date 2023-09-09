@@ -1,4 +1,0 @@
-tqdm
-numpy
-torch
-safetensors
