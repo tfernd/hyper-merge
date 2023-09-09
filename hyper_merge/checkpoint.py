@@ -151,6 +151,18 @@ def filter_checkpoints_(
 
     return checkpoints
 
+# ?
+def clone_checkpoint(
+    checkpoint: Checkpoint,
+    /,
+) -> Checkpoint:
+    """
+    Create a deep copy of a model checkpoint.
+    The cloned checkpoint is a separate instance in memory but contains the same tensor data.
+    """
+
+    return {key: weight.clone() for key, weight in checkpoint.items()}
+
 
 def create_average_checkpoint(
     paths: list[str] | list[Path],

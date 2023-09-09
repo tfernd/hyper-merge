@@ -8,9 +8,9 @@ from torch import Tensor
 
 from .utils import free_cuda
 from .checkpoint import Checkpoint, transfer_checkpoint_, transfer_checkpoints_, filter_checkpoint_, filter_checkpoints_
-from .constants import LORA_KEYS
+from .constants import LORA_KEYS, CPU
 from .lora import svd, reconstruct_weights
-from .types import SVDCheckpoint, SVDOutput
+from .types import SVDCheckpoint
 
 def create_hyper_checkpoint(
     checkpoints: list[Checkpoint],
@@ -112,18 +112,20 @@ def remove_direction(
     λ: Tensor,
     /,
     dtype: Optional[torch.dtype] = None,
-    device: Optional[torch.device] = None,
+    device: Optional[torch.device] = None,# ? not used?
 ) -> list[Checkpoint]:
     free_cuda()
+
+    checkpoints = transfer_checkpoints_(checkpoints, dtype, CPU)
 
     out: list[Checkpoint] = []
     for checkpoint, scale in tqdm(list(zip(checkpoints, λ)), desc="Removing directions"):
         free_cuda()
 
-        checkpoint = transfer_checkpoint_(checkpoint, dtype, device)
-        checkpoint = {key: (weights - scale * reconstruct_weights(diff_uv[key])).cpu() for (key, weights) in checkpoint.items()}
+        checkpoint = {key: (weights - scale.item() * reconstruct_weights(diff_uv[key]).cpu()) for (key, weights) in checkpoint.items()}
 
         out.append(checkpoint)
+        del checkpoint
     free_cuda()
 
     return out
