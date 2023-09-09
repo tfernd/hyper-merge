@@ -122,7 +122,7 @@ def remove_direction(
     for checkpoint, scale in tqdm(list(zip(checkpoints, λ)), desc="Removing directions"):
         free_cuda()
 
-        checkpoint = {key: (weights - scale.item() * reconstruct_weights(diff_uv[key]).cpu()) for (key, weights) in checkpoint.items()}
+        checkpoint = {key: (weights - reconstruct_weights(diff_uv[key]).mul(scale).cpu()) for (key, weights) in checkpoint.items()}
 
         out.append(checkpoint)
         del checkpoint
