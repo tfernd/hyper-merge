@@ -11,6 +11,11 @@ import torch
 
 @dataclass
 class Config:
+    """
+    Configuration class for the Hyper-merge algorithm.
+    """
+
+    name: str
     models: list[Path]
     device: torch.device
     dtype: torch.dtype
@@ -26,8 +31,12 @@ class Config:
         with open(path, "r") as f:
             config_data = yaml.safe_load(f)
 
-        models = [Path(model) for model in config_data["models"]]
+        name = config_data.get("name", "unamed")
+
+        models = [Path(path) for path in config_data["models"]]  # raw paths
         assert models, "models list cannot be empty"
+        for model in models:
+            assert model.exists(), "?"
 
         # Check if the device is cuda or cpu
         device_str = config_data.get("device", "cuda").lower()
@@ -55,4 +64,22 @@ class Config:
         ranks = tuple(map(int, config_data.get("ranks", (64, 64, 32, 32))))
         assert ranks, "ranks tuple cannot be empty"
 
-        return cls(models, device, dtype, iterations, ranks)
+        return cls(name, models, device, dtype, iterations, ranks)
+
+    def __repr__(self):
+        models_str = ",\n".join([f"        '.../{path.stem}'" for path in self.models])
+
+        return f"""{self.__class__.__qualname__}(
+    name='{self.name}',
+    models=[
+{models_str}
+    ],
+    device='{self.device.type}',
+    dtype='{self.dtype}',
+    iterations={self.iterations},
+    ranks={self.ranks}
+)"""
+
+    @property
+    def checkpoint_names(self) -> list[str]:
+        return [path.stem for path in self.models]

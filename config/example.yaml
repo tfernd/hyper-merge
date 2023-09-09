@@ -1,3 +1,5 @@
+name: my cool model # how you want your models to be called
+
 models:
   # Specify the paths to your SD 1.5 models in SAFETENSORS format
   - C:\path-to-your-SD-1.5-model.safetensors

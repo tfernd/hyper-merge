@@ -5,6 +5,7 @@ Math.nb
 
 **/*.pyc
 **/__pycache__
+models/*
 
 # temporary
 .old
