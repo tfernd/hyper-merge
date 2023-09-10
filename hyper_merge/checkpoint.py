@@ -8,13 +8,16 @@ from tqdm.auto import tqdm
 import torch
 from safetensors.torch import load_file, save_file
 
-from .utils import free_cuda
+from .types import Checkpoint, PathLike, PathsLike
 from .constants import SD_KEYS, FLOAT32
-from .types import Checkpoint
+from .utils import free_cuda
+
+
+# Path-related functions
 
 
 def load_checkpoint(
-    path: str | Path,
+    path: PathLike,
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
@@ -46,7 +49,7 @@ def load_checkpoint(
 
 
 def load_checkpoints(
-    paths: list[str] | list[Path] | list[str|Path],
+    paths: PathsLike,
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
@@ -86,6 +89,72 @@ def save_checkpoint_(
     save_file(checkpoint, path, metadata=metadata)
 
 
+def create_average_checkpoint(
+    paths: PathsLike,
+    /,
+    dtype: Optional[torch.dtype] = None,
+    device: Optional[torch.device] = None,
+) -> Checkpoint:
+    """
+    Create an averaged model checkpoint from multiple checkpoint files.
+    The averaging is performed element-wise across tensors.
+    The averaged checkpoint is then transferred to a specified `device` and `dtype`.
+    """
+
+    M = len(paths)
+    assert M > 1
+
+    average_checkpoint: Checkpoint = {}
+    for path in tqdm(paths, desc="Creating average checkpoint"):
+        free_cuda()
+
+        # Use float to avoid overflow
+        checkpoint = load_checkpoint(path, FLOAT32, device, keys=SD_KEYS)  # TODO extend keys
+
+        for key, weights in checkpoint.items():
+            average_checkpoint[key] = average_checkpoint.get(key, 0) + weights.div(M)
+
+            del checkpoint[key]
+        del checkpoint
+    free_cuda()
+
+    transfer_checkpoint_(average_checkpoint, dtype, device)
+
+    return average_checkpoint
+
+
+# checkpoint-related functions
+
+
+def filter_checkpoint_(
+    checkpoint: Checkpoint,
+    /,
+    keys: list[str],
+) -> None:
+    """
+    Filter out keys from a checkpoint dictionary to keep only the specified keys.
+    Useful for selecting specific layers or parameters from a model checkpoint.
+    """
+
+    keys_to_remove = [key for key in checkpoint.keys() if key not in keys]
+    for key in keys_to_remove:
+        del checkpoint[key]
+
+
+def filter_checkpoints_(
+    checkpoints: list[Checkpoint],
+    /,
+    keys: list[str],  # TODO Sequence? Listable?
+) -> None:
+    """
+    Filter out keys from a list of model checkpoints to keep only the specified keys in each checkpoint.
+    Useful for selecting specific layers or parameters from a list of model checkpoints.
+    """
+
+    for checkpoint in checkpoints:
+        filter_checkpoint_(checkpoint, keys)
+
+
 def transfer_checkpoint_(
     checkpoint: Checkpoint,
     /,
@@ -110,67 +179,5 @@ def transfer_checkpoints_(
     Transfer a list of model checkpoints to a different `device` and `dtype`.
     """
 
-    for i, checkpoint in enumerate(checkpoints):
+    for checkpoint in checkpoints:
         transfer_checkpoint_(checkpoint, dtype, device)
-
-
-def filter_checkpoint_(
-    checkpoint: Checkpoint,
-    /,
-    keys: list[str],  # TODO Sequence? Listable?
-) -> None:
-    """
-    Filter out keys from a checkpoint dictionary to keep only the specified keys.
-    Useful for selecting specific layers or parameters from a model checkpoint.
-    """
-
-    keys_to_remove = [key for key in checkpoint.keys() if key not in keys]
-    for key in keys_to_remove:
-        del checkpoint[key]
-
-
-def filter_checkpoints_(
-    checkpoints: list[Checkpoint],
-    /,
-    keys: list[str],  # TODO Sequence? Listable?
-) -> None:
-    """
-    Filter out keys from a list of model checkpoints to keep only the specified keys in each checkpoint.
-    Useful for selecting specific layers or parameters from a list of model checkpoints.
-    """
-
-    for i, checkpoint in enumerate(checkpoints):
-        filter_checkpoint_(checkpoint, keys)
-
-
-def create_average_checkpoint(
-    paths: list[str] | list[Path] | list[str|Path],
-    /,
-    dtype: Optional[torch.dtype] = None,
-    device: Optional[torch.device] = None,
-) -> Checkpoint:
-    """
-    Create an averaged model checkpoint from multiple checkpoint files.
-    The averaging is performed element-wise across tensors.
-    The averaged checkpoint is then transferred to a specified `device` and `dtype`.
-    """
-
-    M = len(paths)
-    assert M > 1
-
-    average_checkpoint: Checkpoint = {}
-    for path in tqdm(paths, desc="Creating average checkpoint"):
-        free_cuda()
-
-        # Use float to avoid overflow
-        checkpoint = load_checkpoint(path, FLOAT32, device, keys=SD_KEYS)  # TODO extend keys
-
-        for key, weights in checkpoint.items():
-            average_checkpoint[key] = average_checkpoint.get(key, 0) + weights.div(M)
-            del weights
-        del checkpoint
-    free_cuda()
-
-    transfer_checkpoint_(average_checkpoint, dtype, device)
-
-    return average_checkpoint

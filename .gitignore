@@ -9,3 +9,5 @@ models/*
 
 assets/*.svg
 debug.ipynb
+
+.old
