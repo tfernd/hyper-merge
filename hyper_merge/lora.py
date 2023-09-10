@@ -98,7 +98,7 @@ def extract_lora_and_average_checkpoint(
 
             # compute loss
             free_cuda()
-            loss = torch.zeros(1, device=device)
+            loss = loss.zero_()
             for key in tqdm(LORA_KEYS, desc="Computing loss", leave=False):
                 Wavg = avg_model[key][..., None]
                 Ws = torch.stack([checkpoint[key].to(device) for checkpoint in checkpoints], dim=-1)
