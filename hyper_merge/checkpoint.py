@@ -39,14 +39,14 @@ def load_checkpoint(
         checkpoint = torch.load(path, map_location="cpu")
         checkpoint = checkpoint["state_dict"] if "state_dict" in checkpoint else checkpoint
 
-    checkpoint = filter_checkpoint_(checkpoint, keys or SD_KEYS)  # TODO extend to other models
-    checkpoint = transfer_checkpoint_(checkpoint, dtype, device)
+    filter_checkpoint_(checkpoint, keys or SD_KEYS)  # TODO extend to other models
+    transfer_checkpoint_(checkpoint, dtype, device)
 
     return checkpoint
 
 
 def load_checkpoints(
-    paths: list[str] | list[Path],
+    paths: list[str] | list[Path] | list[str|Path],
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
@@ -61,7 +61,7 @@ def load_checkpoints(
     return [load_checkpoint(path, dtype, device, keys=keys) for path in tqdm(paths, desc="Loading checkpoints")]
 
 
-def save_checkpoint(
+def save_checkpoint_(
     checkpoint: Checkpoint,
     path: str | Path,
     /,
@@ -82,8 +82,7 @@ def save_checkpoint(
     assert path.suffix == ".safetensors", "I told you to use safetensors, 😔"
     path.parent.mkdir(exist_ok=True, parents=True)
 
-    checkpoint = transfer_checkpoint_(checkpoint, dtype, device=torch.device("cpu"))
-
+    transfer_checkpoint_(checkpoint, dtype, device=torch.device("cpu"))
     save_file(checkpoint, path, metadata=metadata)
 
 
@@ -92,7 +91,7 @@ def transfer_checkpoint_(
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
-) -> Checkpoint:
+) -> None:
     """
     Transfer a model checkpoint to a different `device` and `dtype`.
     """
@@ -100,30 +99,26 @@ def transfer_checkpoint_(
     for key, weight in checkpoint.items():
         checkpoint[key] = weight.to(dtype=dtype, device=device, non_blocking=True)
 
-    return checkpoint
-
 
 def transfer_checkpoints_(
     checkpoints: list[Checkpoint],
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
-) -> list[Checkpoint]:
+) -> None:
     """
     Transfer a list of model checkpoints to a different `device` and `dtype`.
     """
 
     for i, checkpoint in enumerate(checkpoints):
-        checkpoints[i] = transfer_checkpoint_(checkpoint, dtype, device)
-
-    return checkpoints
+        transfer_checkpoint_(checkpoint, dtype, device)
 
 
 def filter_checkpoint_(
     checkpoint: Checkpoint,
     /,
     keys: list[str],  # TODO Sequence? Listable?
-) -> Checkpoint:
+) -> None:
     """
     Filter out keys from a checkpoint dictionary to keep only the specified keys.
     Useful for selecting specific layers or parameters from a model checkpoint.
@@ -133,40 +128,23 @@ def filter_checkpoint_(
     for key in keys_to_remove:
         del checkpoint[key]
 
-    return checkpoint
-
 
 def filter_checkpoints_(
     checkpoints: list[Checkpoint],
     /,
     keys: list[str],  # TODO Sequence? Listable?
-) -> list[Checkpoint]:
+) -> None:
     """
     Filter out keys from a list of model checkpoints to keep only the specified keys in each checkpoint.
     Useful for selecting specific layers or parameters from a list of model checkpoints.
     """
 
     for i, checkpoint in enumerate(checkpoints):
-        checkpoints[i] = filter_checkpoint_(checkpoint, keys)
-
-    return checkpoints
-
-
-# ?
-def clone_checkpoint(
-    checkpoint: Checkpoint,
-    /,
-) -> Checkpoint:
-    """
-    Create a deep copy of a model checkpoint.
-    The cloned checkpoint is a separate instance in memory but contains the same tensor data.
-    """
-
-    return {key: weight.clone() for key, weight in checkpoint.items()}
+        filter_checkpoint_(checkpoint, keys)
 
 
 def create_average_checkpoint(
-    paths: list[str] | list[Path],
+    paths: list[str] | list[Path] | list[str|Path],
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
@@ -193,4 +171,6 @@ def create_average_checkpoint(
         del checkpoint
     free_cuda()
 
-    return transfer_checkpoint_(average_checkpoint, dtype, device)
+    transfer_checkpoint_(average_checkpoint, dtype, device)
+
+    return average_checkpoint

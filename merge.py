@@ -12,9 +12,9 @@ from torch import Tensor
 from hyper_merge.config import Config
 from hyper_merge.utils import free_cuda
 from hyper_merge.constants import LORA_KEYS
-from hyper_merge.checkpoint import create_average_checkpoint, save_checkpoint, load_checkpoint, load_checkpoints, filter_checkpoint_
+from hyper_merge.checkpoint import create_average_checkpoint, save_checkpoint_, load_checkpoint, load_checkpoints, filter_checkpoint_
 from hyper_merge.hyper import create_hyper_checkpoint, remove_direction
-from hyper_merge.lora import make_lora_checkpoint
+from hyper_merge.svd import make_lora_checkpoint
 
 # Get terminal width
 terminal_width = shutil.get_terminal_size().columns
@@ -44,13 +44,12 @@ if __name__ == "__main__":
     if not average_path.exists():
         average_checkpoint = create_average_checkpoint(config.models, dtype, device)
         metadata = dict(models=", ".join(config.checkpoint_names))
-        save_checkpoint(average_checkpoint, average_path, dtype, metadata=metadata)
+        save_checkpoint_(average_checkpoint, average_path, dtype, metadata=metadata)
     average_checkpoint = load_checkpoint(average_path, dtype, device)
 
     # Filter the average checkpoint to only include LoRA keys
     logging.info("Filtering average model checkpoint with LoRA related weights...")
-    trimmed_average_checkpoint = filter_checkpoint_(average_checkpoint, LORA_KEYS)
-    del average_checkpoint
+    filter_checkpoint_(average_checkpoint, LORA_KEYS)
 
     # Load checkpoints with only LoRA-related weights
     logging.info("Loading checkpoints with LoRA-related weights...")
@@ -67,15 +66,15 @@ if __name__ == "__main__":
         # Compute better average, differential weights, and scales
         logging.info("Computing hyper-checkpoint...")
         trimmed_diff_uv, λ = create_hyper_checkpoint(
-            trimmed_checkpoints, trimmed_average_checkpoint, dtype, device, rank=rank, iterations=config.iterations
+            trimmed_checkpoints, average_checkpoint, dtype, device, rank=rank, iterations=config.iterations
         )
         λs.append(λ)
 
         # Save the LoRA-checkpoint
         lora_path = Path(f"models/{config.name}_{step}-{rank}.safetensors")
-        lora = make_lora_checkpoint(trimmed_diff_uv, rank)
+        lora = make_lora_checkpoint(trimmed_diff_uv)
         metadata = {name: str(scale.item()) for (name, scale) in zip(config.checkpoint_names, λ)}
-        save_checkpoint(lora, lora_path, dtype, metadata=metadata)
+        save_checkpoint_(lora, lora_path, dtype, metadata=metadata)
 
         # Remove specific directions based on differential weights and scales
         logging.info("Removing specific directions from checkpoints...")
