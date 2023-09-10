@@ -7,5 +7,4 @@ Math.nb
 **/__pycache__
 models/*
 
-# temporary
-.old
+assets/*.svg
