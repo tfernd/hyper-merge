@@ -63,7 +63,7 @@ models:
   - C:\path-to-your-SD-1.5-model.safetensors
 
 device: cuda # Use 'cuda' for GPU acceleration, 'cpu' if not recommended
-dtype: float16 # Choose 'float16' for performance, 'bfloat' for RTX 3xxx/4xxx series, or 'float32' for compatibility
+dtype: float16 # Choose 'float16' for performance, 'bfloat16' for RTX 3xxx/4xxx series, or 'float32' for compatibility
 
 iterations: 6 # Set the number of optimization iterations; greater than 2 recommended
 ranks: # Define the ranks for the LoRA model
