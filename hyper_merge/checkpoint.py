@@ -13,7 +13,7 @@ from .constants import SD_KEYS, FLOAT32
 from .utils import free_cuda
 
 
-# Path-related functions
+################### Path-related functions ###################
 
 
 def load_checkpoint(
@@ -123,7 +123,7 @@ def create_average_checkpoint(
     return average_checkpoint
 
 
-# checkpoint-related functions
+################### checkpoint-related functions ###################
 
 
 def filter_checkpoint_(
