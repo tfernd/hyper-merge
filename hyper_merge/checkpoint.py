@@ -10,15 +10,15 @@ from torch import Tensor
 from safetensors.torch import load_file, save_file
 
 from .types import Checkpoint, Checkpoints, PathLike, PathsLike
-from .constants import SD_KEYS, FLOAT32
+from .constants import SD_KEYS, FLOAT32, CPU
 from .utils import free_cuda
 
 
 ################### Path-related functions ###################
 
 
-def load_checkpoint_(
-    checkpoint: PathLike | Checkpoint,
+def load_checkpoint(
+    path: PathLike,
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
@@ -34,17 +34,15 @@ def load_checkpoint_(
 
     free_cuda()
 
-    if isinstance(checkpoint, (str, Path)):
-        path = Path(checkpoint)
-        if path.suffix == ".safetensors":
-            checkpoint = load_file(checkpoint, device="cpu")
-        else:
-            logging.warning("Please use .safetensors!")
-            assert path.suffix == ".ckpt", "What are you trying to open?"
+    path = Path(path)
+    if path.suffix == ".safetensors":
+        checkpoint = load_file(path, device="cpu")
+    else:
+        logging.warning("Please use .safetensors!")
+        assert path.suffix == ".ckpt", "What are you trying to open?"
 
-            obj = torch.load(path, map_location="cpu")
-            checkpoint = obj["state_dict"] if "state_dict" in obj else obj
-            assert isinstance(checkpoint, dict)
+        obj = torch.load(path, map_location="cpu")
+        checkpoint = obj["state_dict"] if "state_dict" in obj else obj
 
     filter_checkpoint_(checkpoint, keys or SD_KEYS)  # TODO extend to other models
     transfer_checkpoint_(checkpoint, dtype, device)
@@ -53,19 +51,20 @@ def load_checkpoint_(
 
 
 def load_checkpoints(
-    paths: PathsLike | Checkpoints,
+    paths: PathsLike,
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
     *,
     keys: Optional[list[str]] = None,
+    leave: bool = False,
 ) -> Checkpoints:
     """
     Load multiple model checkpoints from a list of file paths.
     Each checkpoint is transferred to a specified `device` and `dtype`.
     """
 
-    return [load_checkpoint_(checkpoint, dtype, device, keys=keys) for checkpoint in tqdm(paths, desc="Loading checkpoints")]
+    return [load_checkpoint(checkpoint, dtype, device, keys=keys) for checkpoint in tqdm(paths, desc="Loading checkpoints", leave=leave)]
 
 
 def save_checkpoint_(
@@ -89,15 +88,17 @@ def save_checkpoint_(
     assert path.suffix == ".safetensors", "I told you to use safetensors, 😔"
     path.parent.mkdir(exist_ok=True, parents=True)
 
-    transfer_checkpoint_(checkpoint, dtype, device=torch.device("cpu"))
+    transfer_checkpoint_(checkpoint, dtype, device=CPU)
     save_file(checkpoint, path, metadata=metadata)
 
 
-def create_average_checkpoint_(
-    checkpoints: PathsLike | Checkpoints,
+def create_average_checkpoint(
+    paths: PathsLike,
     /,
     dtype: Optional[torch.dtype] = None,
     device: Optional[torch.device] = None,
+    *,
+    leave: bool = False,
 ) -> Checkpoint:
     """
     Create an averaged model checkpoint from multiple checkpoint files.
@@ -107,20 +108,19 @@ def create_average_checkpoint_(
     This consumes the checkpoints!
     """
 
-    M = len(checkpoints)
+    M = len(paths)
     assert M > 1
 
     average_checkpoint: Checkpoint = {}
-    for i, checkpoint in enumerate(tqdm(checkpoints, desc="Creating average checkpoint")):
+    for path in tqdm(paths, desc="Creating average checkpoint", leave=leave):
         free_cuda()
 
         # Use float to avoid overflow
-        checkpoint = load_checkpoint_(checkpoint, FLOAT32, device, keys=SD_KEYS)  # TODO extend keys
+        checkpoint = load_checkpoint(path, FLOAT32, device, keys=SD_KEYS)  # TODO extend keys
 
         for key, weights in checkpoint.items():
             average_checkpoint[key] = average_checkpoint.get(key, 0) + weights.div(M)
-
-        del checkpoints[i]
+        del checkpoint
     free_cuda()
 
     transfer_checkpoint_(average_checkpoint, dtype, device)
