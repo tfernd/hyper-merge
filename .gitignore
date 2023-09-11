@@ -6,6 +6,7 @@ Math.nb
 **/*.pyc
 **/__pycache__
 models/*
+model/*
 
 assets/*.svg
 debug.ipynb

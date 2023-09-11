@@ -12,7 +12,7 @@ from torch import Tensor
 from hyper_merge.config import Config
 from hyper_merge.utils import free_cuda
 from hyper_merge.constants import LORA_KEYS
-from hyper_merge.checkpoint import create_average_checkpoint, save_checkpoint_, load_checkpoint, load_checkpoints, filter_checkpoint_
+from hyper_merge.checkpoint import create_average_checkpoint_, save_checkpoint_, load_checkpoint_, load_checkpoints, filter_checkpoint_
 from hyper_merge.hyper import create_hyper_checkpoint, remove_direction
 from hyper_merge.svd import make_lora_checkpoint
 
@@ -42,10 +42,10 @@ if __name__ == "__main__":
         ...
         # TODO check if metadata is the same, otherwise, remove it
     if not average_path.exists():
-        average_checkpoint = create_average_checkpoint(config.models, dtype, device)
+        average_checkpoint = create_average_checkpoint_(config.models, dtype, device)
         metadata = dict(models=", ".join(config.checkpoint_names))
         save_checkpoint_(average_checkpoint, average_path, dtype, metadata=metadata)
-    average_checkpoint = load_checkpoint(average_path, dtype, device)
+    average_checkpoint = load_checkpoint_(average_path, dtype, device)
 
     # Filter the average checkpoint to only include LoRA keys
     logging.info("Filtering average model checkpoint with LoRA related weights...")

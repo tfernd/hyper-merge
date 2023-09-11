@@ -46,37 +46,3 @@ def svd_reconstruct(uv: SVDOutput, /) -> Tensor:
     (U, V), shape, rank = uv
 
     return (U @ V).view(*shape)
-
-
-def make_lora_checkpoint(lora_uv: SVDCheckpoint, /) -> Checkpoint:
-    """
-    Create a LoRA-checkpoint based on the provided checkpoint and specified rank.
-
-    This function takes an existing checkpoint, filters it to only include keys relevant to LoRA, and then performs SVD-based rank decomposition for each tensor. The rank-decomposed weights are then organized into a new checkpoint, following a specific naming convention for LoRA-compatible keys.
-
-    The rank decomposition is specifically designed to match the architecture of the model to which the checkpoint belongs. The function reshapes weights accordingly, so that they can be used in both linear and convolutional layers.
-    """
-
-    lora: Checkpoint = {}
-    for lora_key, ((U, V), shape, rank) in tqdm(lora_uv.items(), desc="Making LoRA"):
-        assert lora_key in LORA_MAPPING
-
-        up_key = lora_key + ".lora_up.weight"
-        down_key = lora_key + ".lora_down.weight"
-        alpha_key = lora_key + ".alpha"
-
-        out_dim, in_dim = shape[:2]
-        kernel_size = shape[2:]
-        pre_kernel = (1, 1) if len(kernel_size) == 2 else ()
-
-        # Reshape for linear or conv-layer
-        U = U.unflatten(1, (rank, *pre_kernel)).contiguous().to(device="cpu", non_blocking=True)
-        V = V.unflatten(1, (in_dim, *kernel_size)).contiguous().to(device="cpu", non_blocking=True)
-
-        alpha = torch.tensor(rank, dtype=U.dtype)
-
-        lora[up_key] = U
-        lora[down_key] = V
-        lora[alpha_key] = alpha
-
-    return lora
